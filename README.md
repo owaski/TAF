@@ -5,12 +5,16 @@ This is the repository for the NAACL 2025 paper "Anticipating Future with Large 
 ## Environment
 
 ```bash
-conda create -n taf python=3.10
+conda create -n taf -y python=3.10
 conda activate taf
 
-# Install torch and related packages
-pip install torch torchvision torchaudio
+pip install vllm
+pip install pycryptodome accelerate protobuf simuleval
+pip install flash-attn --no-build-isolation
 
+git clone git@github.com:ninja-build/ninja.git && cd ninja
+git checkout release
+./configure.py --bootstrap
 ```
 
 ## Citation
