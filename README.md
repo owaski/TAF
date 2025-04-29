@@ -7,7 +7,10 @@ This is the repository for the NAACL 2025 paper "Anticipating Future with Large 
 ```bash
 conda create -n taf python=3.10
 conda activate taf
-pip install -r requirements.txt
+
+# Install torch and related packages
+pip install torch torchvision torchaudio
+
 ```
 
 ## Citation
