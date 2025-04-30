@@ -5,7 +5,7 @@ from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import WriteAction, ReadAction
 
 import torch
-import vllm
+import sglang as sgl
 
 from agents.utils import (
     madlad_load,
@@ -71,19 +71,18 @@ class T2TBase(TextToTextAgent):
         if args.prediction_model_type is None:
             return
         
-        self.predict_model = vllm.LLM(
-            model=args.prediction_model_path,
-            gpu_memory_utilization=0.9,
-            max_model_len=1024,
+        self.predict_model = sgl.Engine(
+            model_path=args.prediction_model_path,
+            mem_fraction_static=0.6,
         )
 
-        self.sampling_params = vllm.SamplingParams(
-            max_tokens=self.prediction_max_tokens,
-            top_k=self.prediction_top_k,
-            top_p=self.prediction_top_p,
-            n=self.prediction_num_continuations,
-            stop=['\n']
-        )
+        self.sampling_params = {
+            "max_new_tokens": self.prediction_max_tokens,
+            "top_k": self.prediction_top_k,
+            "top_p": self.prediction_top_p,
+            "n": self.prediction_num_continuations,
+            "stop": ['\n']
+        }
 
     def load_translation_model(self, args):
         func_map = {
@@ -94,8 +93,11 @@ class T2TBase(TextToTextAgent):
         self.device, self.tokenizer, self.model = func_map[args.translation_model_type](args)
 
     def predict(self, src_prefix):
-        response = self.predict_model.generate([src_prefix], self.sampling_params)
-        batch_predictions = [src_prefix + o.text for o in response[0].outputs]
+        response = self.predict_model.generate(
+            src_prefix,
+            self.sampling_params
+        )
+        batch_predictions = [src_prefix + o['text'] for o in response]
         return batch_predictions
     
     def generate(self, src_prefix, tgt_prefix, return_all_beams=False):

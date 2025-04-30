@@ -1,14 +1,14 @@
 from collections import Counter
 
 import torch
-import vllm
+import sglang as sgl
 from transformers import (
     T5Tokenizer, 
     T5ForConditionalGeneration,
     AutoTokenizer,
     AutoModelForSeq2SeqLM,
+    AutoModelForCausalLM,
 )
-import vllm.sampling_params
 
 def nllb_load(args):
     LANG2CODE = {
@@ -31,12 +31,19 @@ def nllb_load(args):
 
 def tower_load(args):
     device = "cuda"
-    model = vllm.LLM(
-        model=args.translation_model_path,
-        gpu_memory_utilization=0.5,
-        max_model_len=512,
-    )
+    if args.beam_size == 1:
+        model = sgl.Engine(
+            model_path=args.translation_model_path,
+            mem_fraction_static=0.4,
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.translation_model_path, torch_dtype=torch.bfloat16, device_map=device,
+            attn_implementation="flash_attention_2"
+        )
     tokenizer = AutoTokenizer.from_pretrained(args.translation_model_path)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = 'left'
     return device, tokenizer, model
 
 def madlad_load(args):
@@ -81,6 +88,7 @@ def nllb_generate(self, src_prefix, tgt_prefix, return_all_beams=False):
 
     tgt = tgt[:, decoder_input_ids.size(1) : ]
     candidates = self.tokenizer.batch_decode(tgt, skip_special_tokens=True)
+    candidates = [c.strip() for c in candidates]
     return candidates
 
 def tower_generate(self, src_prefix, tgt_prefix, return_all_beams=False):
@@ -128,28 +136,30 @@ Translate the following text from {} into {}.
     if max_new_tokens <= 0:
         return [""] * inputs["input_ids"].size(0)
 
-    sampling_params = vllm.sampling_params.BeamSearchParams(
-        max_tokens=max_new_tokens,
-        beam_width=self.beam_size,
-    )
-
-    prompts = [{"prompt": p} for p in prompts]
-    response = self.model.beam_search(
-        prompts,
-        sampling_params,
-    )
-
-    candidates = []
-    for r in response:
-        for s in r.sequences:
-            pattern = '<|im_start|>  assistant\n'
-            prompt_len = s.text.find(pattern) + len(pattern) + len(tgt_prefix)
-            candidates.append(s.text[prompt_len:].replace("<|im_end|>", "").strip())
-
-    if return_all_beams:
-        return candidates
+    if self.beam_size == 1:
+        sampling_params = {
+            "max_new_tokens": max_new_tokens,
+            "top_k": 1,
+            "stop": ["\n"]
+        }
+        response = self.model.generate(
+            prompts,
+            sampling_params,
+        )
+        candidates = [o['text'] for o in response]
     else:
-        return [candidates[0]]
+        tgt = self.model.generate(
+            **inputs, 
+            max_new_tokens=max_new_tokens,
+            pad_token_id=self.tokenizer.eos_token_id,
+            num_beams=self.beam_size,
+            num_return_sequences=self.beam_size if return_all_beams else 1
+        )
+        tgt = tgt[:, inputs["input_ids"].size(1) : ]
+        candidates = self.tokenizer.batch_decode(tgt, skip_special_tokens=True)
+    candidates = [c.strip() for c in candidates]
+
+    return candidates
 
 def madlad_generate(self, src_prefix, tgt_prefix, return_all_beams=False):
     if type(src_prefix) is str:
