@@ -33,8 +33,8 @@ def tower_load(args):
     device = "cuda"
     model = vllm.LLM(
         model=args.translation_model_path,
-        gpu_memory_utilization=0.45,
-        max_model_len=1024,
+        gpu_memory_utilization=0.5,
+        max_model_len=512,
     )
     tokenizer = AutoTokenizer.from_pretrained(args.translation_model_path)
     return device, tokenizer, model
@@ -136,7 +136,7 @@ Translate the following text from {} into {}.
     prompts = [{"prompt": p} for p in prompts]
     response = self.model.beam_search(
         prompts,
-        sampling_params
+        sampling_params,
     )
 
     candidates = []

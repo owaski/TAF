@@ -12,9 +12,12 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {
+                "PATH": "/home/siqiouya/work/TAF/ninja:$PATH",
                 "PYTHONPATH": "/home/siqiouya/work/TAF",
                 "NCCL_P2P_DISABLE": "1",
-                "NCCL_IB_DISABLE": "1"
+                "NCCL_IB_DISABLE": "1",
+                "CUDA_VISIBLE_DEVICES": "0",
+                "TQDM_DISABLE": "1"
             },
             "args": [
                 "--agent",
@@ -36,12 +39,12 @@
                 
                 "--translation-model-type",
                 // "madlad",
-                // "tower",
-                "nllb",
+                "tower",
+                // "nllb",
                 "--translation-model-path",
                 // "/compute/babel-4-1/siqiouya/madlad400-3b-mt",
-                // "/compute/babel-4-1/siqiouya/towerinstruct-7b-v0.1",
-                "/compute/babel-4-1/siqiouya/nllb-200-distilled-600M",
+                "/compute/babel-4-1/siqiouya/towerinstruct-7b-v0.1",
+                // "/compute/babel-4-1/siqiouya/nllb-200-distilled-600M",
                 "--beam-size",
                 "10",
                 "--max-len-a",
@@ -67,7 +70,8 @@
                 "PATH": "/home/siqiouya/work/TAF/ninja:$PATH",
                 "NCCL_P2P_DISABLE": "1",
                 "NCCL_IB_DISABLE": "1",
-                "CUDA_VISIBLE_DEVICES": "0"
+                "CUDA_VISIBLE_DEVICES": "0",
+                // "TQDM_DISABLE": "1"
             },
             "args": [
                 "--agent",
@@ -108,17 +112,17 @@
                 "0.9",
 
                 "--translation-model-type",
-                "madlad",
+                "tower",
                 "--translation-model-path",
-                "/compute/babel-4-1/siqiouya/madlad400-3b-mt",
+                "/compute/babel-4-1/siqiouya/towerinstruct-7b-v0.1",
                 "--beam-size",
-                "1",
+                "4",
                 "--max-len-a",
                 "1.5",
                 "--max-len-b",
                 "20",
                 "--agree-thres",
-                "0.7",
+                "0.6",
                 "--min-start",
                 "3",
             ]

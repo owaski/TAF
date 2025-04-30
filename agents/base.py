@@ -33,6 +33,10 @@ class T2TBase(TextToTextAgent):
         self.src_char = self.source_language == 'zh' or self.source_language == 'ja'
         self.tgt_char = self.target_language == 'zh' or self.target_language == 'ja'
 
+        self.translation_model_type = args.translation_model_type
+        self.translation_model_path = args.translation_model_path
+        self.load_translation_model(args)
+
         self.prediction_model_type = args.prediction_model_type
         self.prediction_model_path = args.prediction_model_path
         self.prediction_num_continuations = args.prediction_num_continuations
@@ -40,10 +44,6 @@ class T2TBase(TextToTextAgent):
         self.prediction_top_k = args.prediction_top_k
         self.prediction_top_p = args.prediction_top_p
         self.load_prediction_model(args)
-
-        self.translation_model_type = args.translation_model_type
-        self.translation_model_path = args.translation_model_path
-        self.load_translation_model(args)
 
     @staticmethod
     def add_args(parser):
@@ -73,7 +73,7 @@ class T2TBase(TextToTextAgent):
         
         self.predict_model = vllm.LLM(
             model=args.prediction_model_path,
-            gpu_memory_utilization=0.45,
+            gpu_memory_utilization=0.9,
             max_model_len=1024,
         )
 
